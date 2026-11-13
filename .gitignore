@@ -1,0 +1,16 @@
+/.dsh-vrchat/
+/.venv/
+__pycache__/
+*.py[cod]
+.env
+.env.*
+.credentials.yaml
+*.log
+*.zip
+
+# Locally imported character assets and Unity editor preferences.
+/unity/Assets/DafeiyuKipfel/
+/unity/Assets/DafeiyuKipfel.meta
+/unity/Assets/Dafeiyu/Dafeiyu Test World.unity
+/unity/Assets/Dafeiyu/Dafeiyu Test World.unity.meta
+/unity/UserSettings/

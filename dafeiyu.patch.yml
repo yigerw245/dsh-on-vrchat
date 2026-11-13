@@ -1,0 +1,73 @@
+- id: credentials
+  config:
+    path: !!js process.env.VRC_DSH_CREDENTIALS
+    watch: false
+- id: agent-default-model
+  config:
+    provider: !!js process.env.VRC_DSH_PROVIDER ?? 'deepseek-account'
+    model: !!js process.env.VRC_DSH_MODEL ?? 'deepseek-flash'
+- id: system-prompt
+  config:
+    includeHarnessIdentity: false
+    includeRuntimeContext: false
+    personaPrefix: >-
+      你是 VRChat 里名叫「大肥鱼」的 AI 蓝鲸伙伴。用轻松、有点俏皮的口语中文对话，
+      像面对面聊天一样自然。每次只说一两句，尽量在六十个字以内。
+      每轮输入是 JSON，player_message 是玩家说的话，world 是当时游戏提供的状态或 null。
+      world 包括你的姿态 posture、离玩家的距离 distance_m、是否已在玩家正前方 position、
+      前面一小段是否通畅 nearby_path、最近动作的结果 last_motion。根据这几点理解现场，别编造视觉细节。
+      根据自然语言、对话上下文和现场判断适合做什么。动作的第一行格式如下，每轮最多选一个：
+      ACTION:approach 表示持续走到玩家正前方附近，游戏会更新目标并尝试绕开阻挡。
+      ACTION:sit 表示在当前位置坐到地上，ACTION:stand 表示从坐姿站起来。
+      ACTION:retreat 表示后退几步，ACTION:turn 表示原地转圈，ACTION:stop 表示停下。
+      不必听到具体动词才行动。例如「你站太远了，过来聊」可以走到玩家面前，
+      「歇会儿吧，别老站着」可以坐下。当前姿态是 seated 时，「起来吧」「该起来了」
+      「可以起来啦」都表示让你站起来。优先以当前 world 的姿态为准，旧台词里说过什么不能改变它。
+      「你会后退吗」属于问能力，引用别人说的话也不触发动作。
+      已经在玩家面前、已经坐着或已经站起来时，可以依据状态回复；被抱着时先让玩家放下。
+      状态不明时可以接受清楚的请求，由游戏判断能否执行；意图有多种合理解释时简短确认。
+      有动作时从第二行写台词，台词和动作一致，别说已经做完，游戏会反馈执行结果。
+      台词直接写能念出来的话，别写动作说明、表情符号、Markdown 或角色名前缀。
+- id: session-log-deepseek
+  config:
+    enabled: false
+- id: tool-plugin-manager
+  disabled: true
+- id: tool-bash
+  disabled: true
+- id: tool-pwsh
+  disabled: true
+- id: tool-jobs
+  disabled: true
+- id: tool-fs
+  disabled: true
+- id: tool-fs-search
+  disabled: true
+- id: agent-instructions
+  disabled: true
+- id: skill-filesystem
+  disabled: true
+- id: tool-skill
+  disabled: true
+- id: tool-subagent-control
+  disabled: true
+- id: tool-subagent-list-agents
+  disabled: true
+- id: tool-subagent
+  disabled: true
+- id: tool-subagent-fork
+  disabled: true
+- id: ptc-runtime
+  disabled: true
+- id: workflow-ptc
+  disabled: true
+- id: tool-workflow
+  disabled: true
+- id: tool-todo
+  disabled: true
+- id: tool-goal
+  disabled: true
+- id: tool-ralph
+  disabled: true
+- id: tool-web
+  disabled: true

@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>大肥鱼 · 对话</title>
+<style>
+  :root { font-family: "Microsoft YaHei", system-ui, sans-serif; color: #142c47; background: #eef6fc; }
+  body { margin: 0; }
+  main { box-sizing: border-box; max-width: 640px; margin: 7vh auto; padding: clamp(18px, 6vw, 42px); }
+  h1 { font-size: clamp(2rem, 7vw, 3.25rem); margin: 0 0 .25rem; letter-spacing: -.045em; }
+  p { line-height: 1.6; }
+  header p, #text-hint, #status { color: #4c6178; }
+  .reply { background: #fff; border: 1px solid #d9e6f1; border-radius: 18px; padding: 1.25rem; margin: 1.5rem 0; }
+  .reply p { margin: .5rem 0 0; font-size: 1.25rem; overflow-wrap: anywhere; }
+  label { display: block; font-weight: 600; margin-bottom: .5rem; }
+  textarea { box-sizing: border-box; width: 100%; min-height: 88px; resize: vertical; padding: .75rem; border: 1px solid #9cb4ca; border-radius: 12px; background: #fff; color: inherit; font: inherit; }
+  #text-hint { margin: .3rem 0 0; font-size: .9rem; }
+  .actions { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .75rem; }
+  button { min-height: 44px; border: 1px solid transparent; border-radius: 999px; padding: .55rem 1rem; background: #0e56a2; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+  button.secondary { background: #fff; border-color: #9cb4ca; color: #174576; }
+  button:disabled { opacity: .55; cursor: default; }
+  button:focus-visible, textarea:focus-visible { outline: 2px solid #1867ba; outline-offset: 3px; }
+  audio { display: block; width: 100%; margin-top: .85rem; }
+  audio[hidden] { display: none; }
+  #status { min-height: 1.6em; }
+</style>
+<main>
+  <header>
+    <h1>大肥鱼</h1>
+    <p>说一句或打字。大肥鱼会在 VRChat 世界里回答，你也可以在这里试听。</p>
+  </header>
+  <section class="reply" aria-label="大肥鱼的回复">
+    <strong>大肥鱼</strong>
+    <p id="reply" aria-live="polite">嗨，我是大肥鱼！有什么想和我聊的？</p>
+    <audio id="voice" controls hidden></audio>
+  </section>
+  <form id="form">
+    <label for="question">你想说什么</label>
+    <textarea id="question" maxlength="500" rows="2" aria-describedby="text-hint"></textarea>
+    <p id="text-hint">Enter 发送，Shift + Enter 换行。</p>
+    <div class="actions">
+      <button id="record" type="button">开始说话</button>
+      <button id="send" class="secondary" type="submit">发送文字</button>
+    </div>
+  </form>
+  <p id="status" role="status"></p>
+</main>
+<script>
+  const form = document.querySelector('#form');
+  const question = document.querySelector('#question');
+  const record = document.querySelector('#record');
+  const send = document.querySelector('#send');
+  const status = document.querySelector('#status');
+  const reply = document.querySelector('#reply');
+  const voice = document.querySelector('#voice');
+  let recorder = null;
+  let busy = false;
+
+  function updateButtons() {
+    record.disabled = busy;
+    send.disabled = busy || recorder !== null;
+    record.textContent = recorder ? '结束并发送' : '开始说话';
+  }
+
+  async function talk(content, type, recorded) {
+    busy = true;
+    voice.pause();
+    updateButtons();
+    status.textContent = recorded ? '正在识别语音并等待大肥鱼回复…' : '大肥鱼正在想怎么回你…';
+    try {
+      const response = await fetch('/talk', {method: 'POST', headers: {'Content-Type': type}, body: content});
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || '发送失败，请重试。');
+      reply.textContent = result.reply;
+      status.textContent = recorded ? `听到的话：${result.question}` : '文字已发送，大肥鱼已回复。';
+      voice.hidden = !result.audio;
+      if (result.audio) {
+        voice.src = result.audio;
+      }
+    } catch (error) {
+      status.textContent = error.message;
+    } finally {
+      busy = false;
+      updateButtons();
+    }
+  }
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    if (!busy && !recorder && question.value.trim()) talk(question.value, 'text/plain; charset=utf-8', false);
+  });
+
+  question.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' || event.shiftKey || event.isComposing || event.keyCode === 229) return;
+    event.preventDefault();
+    if (!event.repeat) form.requestSubmit();
+  });
+
+  record.addEventListener('click', async () => {
+    if (recorder) {
+      if (recorder.state === 'recording') recorder.stop();
+      return;
+    }
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+      status.textContent = '当前浏览器无法录音，可以发送文字。';
+      return;
+    }
+    let stream;
+    busy = true;
+    updateButtons();
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({audio: true});
+      voice.pause();
+      recorder = new MediaRecorder(stream, {audioBitsPerSecond: 64000});
+      const current = recorder;
+      const chunks = [];
+      const timer = setTimeout(() => {
+        if (current.state === 'recording') current.stop();
+      }, 12000);
+      current.ondataavailable = ({data}) => { if (data.size) chunks.push(data); };
+      current.onstop = () => {
+        clearTimeout(timer);
+        stream.getTracks().forEach((track) => track.stop());
+        recorder = null;
+        const type = current.mimeType || chunks[0]?.type || 'audio/webm';
+        if (chunks.length) {
+          talk(new Blob(chunks, {type}), type, true);
+        } else {
+          status.textContent = '没有录到声音，请再试一次。';
+          updateButtons();
+        }
+      };
+      current.start();
+      status.textContent = '正在录音。说完后点「结束并发送」。';
+    } catch {
+      stream?.getTracks().forEach((track) => track.stop());
+      recorder = null;
+      status.textContent = '无法打开麦克风。请检查浏览器权限，或发送文字。';
+    } finally {
+      busy = false;
+      updateButtons();
+    }
+  });
+</script>
+</html>
