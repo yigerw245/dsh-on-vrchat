@@ -17,7 +17,7 @@
 
 ## 本地导入 Kipfel（可选）
 
-1. 准备你有权使用的 `大肥鱼kipfel.zip`，放到仓库根目录。这个导入脚本适用于含有 `Assets/deep.unity` 的大肥鱼 Unity 源项目压缩包。Kipfel 原版模型可从[作者的 BOOTH 页面](https://mukumi.booth.pm/items/5813187)获取。
+1. 准备你有权使用的 `大肥鱼kipfel.zip`，放到仓库根目录。这个导入脚本适用于含有 `Assets/deep.unity` 的大肥鱼 Unity 源项目压缩包。
 2. 运行 `python import_kipfel.py`，把模型提取到本地的 `unity/Assets/DafeiyuKipfel`。在 VCC 中安装 [lilToon](https://lilxyzw.github.io/lilToon/)（原工程使用 **2.3.4**）。
 3. 在 Unity 里先运行一次 **Tools → Dafeiyu → Open Test World**，再选择 **Tools → Dafeiyu → Install Kipfel Model in Test World**，然后重新 **Build & Test**。
 
